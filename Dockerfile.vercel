@@ -1,0 +1,23 @@
+
+FROM golang:1.24-alpine AS builder
+
+WORKDIR /src
+
+RUN apk add --no-cache bash
+
+COPY go.mod go.sum ./
+RUN go mod download
+
+COPY . .
+RUN scripts/build.sh linux
+
+FROM gcr.io/distroless/static
+
+COPY --from=builder /go/src/app/deflix-stremio /deflix-stremio
+COPY --from=builder /go/src/app/web/configure /web/configure
+
+ENV BIND_ADDR=0.0.0.0
+
+EXPOSE 8080
+
+ENTRYPOINT ["/deflix-stremio"]
